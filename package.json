@@ -1,0 +1,10 @@
+{
+  "name": "serverless-plugin-template-funcion-calls",
+  "version": "1.0.0",
+  "description": "serverless framework plugin to include javascript function calls in templates",
+  "main": "lib/index.js",
+  "scripts": {
+  },
+  "author": "Jonah Leander Hoff",
+  "license": "MIT"
+}
