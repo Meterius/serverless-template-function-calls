@@ -1,3 +1,4 @@
+
 # Serverless Plugin Template Function Calls
 
 This package is a plugin for the [serverless framework](https://serverless.com/). It provides an extension to the serverless template files to include function calls to javascript node modules.
@@ -6,34 +7,49 @@ This package is a plugin for the [serverless framework](https://serverless.com/)
 Install the package with npm via `npm install serverless-template-function-calls` and add `serverless-template-function-calls` to the plugins list. For Yaml that would look like this:
 ```
 plugins:
-	- serverless-template-function-calls
+   - serverless-template-function-calls
 ```
 
 ## Usage
 
-The used javascript modules have to be specified in the configuration.
+Functions are loaded from in the config specified module files and support nested functions in objects. Long function names are resolved via the dot notation. Short function names are available as aliases via the name behind the last dot (long name: module.nested.func1, short name: func1) (be aware that long function names will replace short ones in case of identical names).
 
-The export of the modules can be a single function or a nested object were each function is extracted by the dot notation. Exports that are not functions or objects are ignored. Optionally the function names are shortened by using the name behind the last dot, therefore module.namespace.func1 would be shortened to func1. But longer function names will overwrite shortened function names if a name is ambiguous.
+There are two ways functions are called:
 
-Functions in the template are called be having a string like this ``[function_prefix][function_name]("[first arg]", "[second arg]", ...)``.  Arguments to the function have to be strings, that are enclosed by ". When such a call is made the javascript function return value will replace the string in the template. Note that only the in the config specified root properties will have the replacement applied and the function prefix by default is "+" but could also be configured to be empty or any other string.
+#### Inline Replacement:
+In the template string values will be replaced if a string has the format ```[function_prefix][function_name]("[arg1]", "[arg2]", ...)``` by the function return value if supplied with the arguments.
+
+Example: ``prop: +module.func1("hello ")``
+
+#### Object Replacement:
+
+In the template if the child key of an object has the format ```[function_prefix][function_name](...)``` the parent will be replaced by the function return value if supplied with the child value as the argument.
+
+Example:
+```
+prop:
+	+module.func1(...): "hello "
+```
+
+
 
 ### Example
 
 #### Modules
 single_function.js
 ```
-module.exports = () => "hello"; 
+module.exports = () => "hello";
 ```
 
 multi_function.js
 ```
 module.exports.func0 = (a) => paresInt(a) * 2,
 module.exports.some_namespace = {
-	func1: (x, y) => x + " and " + y,
-	nested_namespace: {
-		func2: (a, b) => ({ a, b }),
-		func3: () => "hello again"
-	}
+   func1: (x, y) => x + " and " + y,
+   nested_namespace: {
+      func2: (a, b) => ({ a, b }),
+      func4: ({a1, a2}) => a1 + a2
+   }
 };
 ```
 
@@ -41,31 +57,46 @@ module.exports.some_namespace = {
 
 ```
 custom:
-	ref_prop: 1000
-	some_prop: +single_function()
-	other_prop: '+multi_function.some_namespace.nested_namespace.func2("valA", "valB")'
-	nested_prop:
-		- something
-		- +multi_function.func0("${self:custom.ref_prop}")
+   ref_prop: 1000
+   some_prop: +single_function()
+   other_prop: '+multi_function.some_namespace.nested_namespace.func2("valA", "valB")'
+   nested_prop:
+      - something
+      - +multi_function.func0("${self:custom.ref_prop}")
+   object_prop:
+	   +multi_function.some_namespace.nested_namespace.func4(...):
+		   a1: 5
+		   a2: 10
+```
+which is equivalent to (with short function names)
+```
+custom:
+   ref_prop: 1000
+   some_prop: +single_function()
+   other_prop: '+func2("valA", "valB")'
+   nested_prop:
+      - something
+      - +func0("${self:custom.ref_prop}")
+   object_prop:
+	   +func4(...):
+		   a1: 5
+		   a2: 10
 ```
 
 ### Output Template (in YAML)
 
 ```
 custom:
-	ref_prop: 1000
-	some_prop: "hello"
-	other_prop:
-		a: "valA"
-		b: "valB"
-	nested_prop:
-		- "something"
-		- 2000
+   ref_prop: 1000
+   some_prop: "hello"
+   other_prop:
+      a: "valA"
+      b: "valB"
+   nested_prop:
+      - "something"
+      - 2000
+   object_prop: 15
 ```
-
-## Usage Details
-
-Currently only strings are applicable as arguments and they have to be escaped in order to be parseble. The replacement is applied after initial serverless variables have been resolved. Making it possible to use serverless variables like in the example as arguments. But that also means that references to function call props will be copied as strings and will therefore be called twice. In the future another syntax that will enable more complicated arguments will be available. If multiple long or multiple shortened function names are identical the used function is for all intends and purposes random. Also note that module, namespace or functions that have names containing dots may cause problems.
 
 Also note that strings are trimmed for the interpretation as a function call string.
 
@@ -74,16 +105,16 @@ Also note that strings are trimmed for the interpretation as a function call str
 The configuration is read from the serverless template in the custom.templateFunctionCalls object. Like this:
 ```
 custom:
-	templateFunctionCalls:
-		some_config_property: some_config_value
-		...
+   templateFunctionCalls:
+      some_config_property: some_config_value
+      ...
 ```
 The possible properties and values follow now.
 
 ### Properties
 
 #### modules (default value: [ ], expected type: string array)
-These are the module files from which the functions are read. The paths have to be specified relative to the template file or absolute and need to be conformant to the require node syntax (.js can therefore be omitted).
+These are the module files from which the functions are read. The paths have to be specified relative to the template file or absolute and need to be conforment to the require node syntax (.js can therefore be omitted).
 
 #### functionPrefix (default value: "+", expected type: string)
 
@@ -97,34 +128,34 @@ These are the template root properties to which the replacement of function call
 In this example config, functions would be recognized without having any prefix. The functions are loaded from module1.js and the module file in the dir2 directory. And any function string call on properties other from resources are ignored. Therefore the template:
 ```
 custom:
-	templateFunctionCalls:
-			functionPrefix: ""
-			modules: ["module1.js", "dir2/module"]
-			roots: ["resources"]
-	
-	some_prop: module1.hello()
-	other_prop: module.test()
+   templateFunctionCalls:
+         functionPrefix: ""
+         modules: ["module1.js", "dir2/module"]
+         roots: ["resources"]
+
+   some_prop: module1.hello()
+   other_prop: module.test()
 
 resources:
-	Resources:
-		resource1: ${self:custom.some_prop}
-		resource2: module.test()
+   Resources:
+      resource1: ${self:custom.some_prop}
+      resource2: module.test()
 ```
 
 assuming module1.hello() = 5 and module.test() = "some string", the template would result in:
 
 ```
 custom:
-	templateFunctionCalls:
-			functionPrefix: ""
-			modules: ["module1.js", "dir2/module"]
-			roots: ["resources"]
+   templateFunctionCalls:
+         functionPrefix: ""
+         modules: ["module1.js", "dir2/module"]
+         roots: ["resources"]
 
-	some_prop: module1.hello()
-	other_prop: module.test()
+   some_prop: module1.hello()
+   other_prop: module.test()
 
 resources:
-	Resources:
-		resource1: 5
-		resource2: "some string"
+   Resources:
+      resource1: 5
+      resource2: "some string"
 ```
