@@ -13,7 +13,7 @@ plugins:
 
 The used javascript modules have to be specified in the configuration.
 
-The export of the modules can be a single function or a nested object were each function is extracted by the dot notation. Exports that are not functions or objects are ignored.
+The export of the modules can be a single function or a nested object were each function is extracted by the dot notation. Exports that are not functions or objects are ignored. Optionally the function names are shortened by using the name behind the last dot, therefore module.namespace.func1 would be shortened to func1. But longer function names will overwrite shortened function names if a name is ambiguous.
 
 Functions in the template are called be having a string like this ``[function_prefix][function_name]("[first arg]", "[second arg]", ...)``.  Arguments to the function have to be strings, that are enclosed by ". When such a call is made the javascript function return value will replace the string in the template. Note that only the in the config specified root properties will have the replacement applied and the function prefix by default is "+" but could also be configured to be empty or any other string.
 
@@ -65,7 +65,7 @@ custom:
 
 ## Usage Details
 
-Currently only strings are applicable as arguments and they have to be escaped in order to be parseble. The replacement is applied after initial serverless variables have been resolved, like in the example can therefore be used as arguments. But that also means that references to function call props will be copied as strings and will therefore be called twice. In the future another syntax that will enable more complicated arguments will be available.
+Currently only strings are applicable as arguments and they have to be escaped in order to be parseble. The replacement is applied after initial serverless variables have been resolved. Making it possible to use serverless variables like in the example as arguments. But that also means that references to function call props will be copied as strings and will therefore be called twice. In the future another syntax that will enable more complicated arguments will be available. If multiple long or multiple shortened function names are identical the used function is for all intends and purposes random. Also note that module, namespace or functions that have names containing dots may cause problems.
 
 Also note that strings are trimmed for the interpretation as a function call string.
 
