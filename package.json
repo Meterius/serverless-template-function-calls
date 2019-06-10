@@ -1,6 +1,6 @@
 {
   "name": "serverless-template-function-calls",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "serverless framework plugin for using javascript functions in templates",
   "main": "lib/index.js",
   "directories": {
